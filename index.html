@@ -1,0 +1,2093 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <meta name="description" content="Sistem Buku Tamu dan Penilaian Layanan GraPARI Bengkulu">
+    <meta name="theme-color" content="#e31837">
+    
+    <title>Sistem Buku Tamu & Penilaian GraPARI Bengkulu</title>
+    
+    <!-- 
+      ================================================================================
+      EXTERNAL LIBRARIES
+      - TailwindCSS : Untuk utility classes CSS (Layouting, typography, colors)
+      - Chart.js    : Untuk render grafik donut pada dashboard admin
+      - FontAwesome : Untuk ikon-ikon vector (User, Star, Dashboard, dsb)
+      - Google Fonts: Menggunakan 'Plus Jakarta Sans' untuk tipografi modern
+      ================================================================================
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- 
+      ================================================================================
+      TAILWIND CONFIGURATION
+      ================================================================================
+    -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        telkomsel: {
+                            DEFAULT: '#e31837',
+                            dark: '#b91c1c',
+                            light: '#ef4444',
+                        },
+                        admin: {
+                            bg: '#020617',
+                            card: '#0f172a',
+                            border: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- 
+      ================================================================================
+      CUSTOM CSS STYLESHEET
+      Berisi animasi, custom scrollbar, glassmorphism, dan utilitas tampilan khusus.
+      Ditulis dengan gaya verbose (terperinci) untuk skalabilitas.
+      ================================================================================
+    -->
+    <style>
+        /* ----------------------------------------------------------------------------
+           CSS RESET & BASE CONFIGURATION
+           ---------------------------------------------------------------------------- */
+        :root {
+            --primary-red: #0a0a0a;
+            --primary-red-hover: #302b2c;
+            --primary-dark: #1d1919;
+            --bg-dark-slate: #020617;
+            --card-dark-slate: #0f172a;
+            --text-light: #f8fafc;
+            --text-muted: #94a3b8;
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --transition-speed: 0.3s;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            background-color: var(--bg-dark-slate);
+            transition: background-color 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* ----------------------------------------------------------------------------
+           ANIMATED MESH GRADIENT BACKGROUND
+           Background cerdas yang tidak polos, bergerak lambat, dan elegan.
+           ---------------------------------------------------------------------------- */
+        .bg-animated-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            pointer-events: none;
+            transition: all 0.8s ease;
+        }
+
+        .mesh-blob {
+            position: absolute;
+            filter: blur(100px);
+            opacity: 0.3;
+            border-radius: 50%;
+            animation: floatBlob 25s infinite alternate cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: transform;
+        }
+        
+        /* State 1: Portal Theme */
+        .theme-portal { background-color: #0f172a; }
+        .theme-portal .blob-primary {
+            background-color: #2a2828;
+            width: 45vw;
+            height: 45vw;
+            top: -15%;
+            left: -15%;
+        }
+        .theme-portal .blob-secondary {
+            background-color: #3b82f6;
+            width: 40vw;
+            height: 40vw;
+            bottom: -5%;
+            right: -10%;
+            animation-delay: -7s;
+        }
+        
+        /* State 2: Form Theme */
+        .theme-form { background: linear-gradient(135deg, #2a2929 0%, #1d1a1a 100%); }
+        .theme-form .blob-primary {
+            background-color: #ffffff;
+            width: 55vw;
+            height: 55vw;
+            top: -20%;
+            right: -10%;
+            opacity: 0.12;
+            left: auto;
+        }
+        .theme-form .blob-secondary {
+            background-color: #000000;
+            width: 50vw;
+            height: 50vw;
+            bottom: -15%;
+            left: -15%;
+            opacity: 0.20;
+            animation-delay: -4s;
+            right: auto;
+        }
+        
+        /* State 3: Admin Theme */
+        .theme-admin { background-color: #020617; }
+        .theme-admin .blob-primary {
+            background-color: #e31837;
+            width: 35vw;
+            height: 35vw;
+            top: -10%;
+            left: -10%;
+            opacity: 0.12;
+        }
+        .theme-admin .blob-secondary {
+            background-color: #3b82f6;
+            width: 30vw;
+            height: 30vw;
+            bottom: -5%;
+            right: -5%;
+            opacity: 0.08;
+            animation-delay: -9s;
+        }
+
+        @keyframes floatBlob {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); }
+            33% { transform: translate(5%, 8%) scale(1.05) rotate(5deg); }
+            66% { transform: translate(-3%, 4%) scale(0.95) rotate(-3deg); }
+            100% { transform: translate(8%, -5%) scale(1.1) rotate(2deg); }
+        }
+
+        /* ----------------------------------------------------------------------------
+           SCROLLBAR KUSTOM PREMIUM
+           ---------------------------------------------------------------------------- */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background-color: #334155;
+            border-radius: 9999px;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background-color: #475569;
+        }
+
+        /* ----------------------------------------------------------------------------
+           CSS ANIMATIONS KEYFRAMES
+           ---------------------------------------------------------------------------- */
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(15px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes scaleIn {
+            0% { opacity: 0; transform: scale(0.92); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes slideInRight {
+            0% { transform: translateX(120%); opacity: 0; }
+            100% { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOutRight {
+            0% { transform: translateX(0); opacity: 1; }
+            100% { transform: translateX(120%); opacity: 0; }
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(227, 24, 55, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(227, 24, 55, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(227, 24, 55, 0); }
+        }
+
+        /* Utility classes for animations */
+        .anim-fade-in { animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .anim-scale-in { animation: scaleIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .toast-enter { animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+        .toast-leave { animation: slideOutRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
+        /* ----------------------------------------------------------------------------
+           GLASSMORPHISM UTILITIES
+           ---------------------------------------------------------------------------- */
+        .glass-light {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .glass-dark-card {
+            background: rgba(15, 23, 42, 0.7);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* ----------------------------------------------------------------------------
+           FORM COMPONENT STYLES
+           ---------------------------------------------------------------------------- */
+        .form-input-modern {
+            width: 100%;
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            padding-left: 1.25rem;
+            padding-right: 1.25rem;
+            border-radius: 0.75rem;
+            border-width: 1.5px;
+            border-style: solid;
+            border-color: #e2e8f0;
+            background-color: #f8fafc;
+            color: #0f172a;
+            font-size: 0.875rem;
+            font-weight: 600;
+            transition-property: all;
+            transition-duration: 0.3s;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            outline: 2px solid transparent;
+            outline-offset: 2px;
+        }
+
+        .form-input-modern:focus {
+            border-color: var(--primary-red);
+            background-color: #ffffff;
+            box-shadow: 0 0 0 4px rgba(227, 24, 55, 0.15);
+        }
+
+        .form-input-modern::placeholder {
+            color: #94a3b8;
+            font-weight: 500;
+        }
+
+        /* ----------------------------------------------------------------------------
+           EMOJI RATING COMPONENT
+           ---------------------------------------------------------------------------- */
+        .rating-grid-container {
+            display: grid;
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .emoji-selector {
+            position: relative;
+        }
+
+        .emoji-selector input[type="radio"] {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .emoji-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding-top: 0.75rem;
+            padding-bottom: 0.75rem;
+            padding-left: 0.25rem;
+            padding-right: 0.25rem;
+            border-width: 2px;
+            border-style: solid;
+            border-color: #e2e8f0;
+            border-radius: 1rem;
+            background-color: #ffffff;
+            cursor: pointer;
+            filter: grayscale(100%);
+            opacity: 0.6;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            user-select: none;
+        }
+
+        .emoji-label:hover {
+            filter: grayscale(20%);
+            opacity: 0.9;
+            transform: translateY(-2px);
+            background-color: #f8fafc;
+            border-color: #cbd5e1;
+        }
+
+        .emoji-selector input[type="radio"]:checked + .emoji-label {
+            filter: grayscale(0%);
+            opacity: 1;
+            transform: scale(1.05) translateY(-3px);
+            border-color: var(--primary-red);
+            background-color: #fff1f2;
+            box-shadow: 0 10px 15px -3px rgba(227, 24, 55, 0.2);
+        }
+
+        .emoji-character {
+            font-size: 2rem;
+            line-height: 1;
+            margin-bottom: 0.375rem;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .emoji-selector input[type="radio"]:checked + .emoji-label .emoji-character {
+            transform: scale(1.2);
+        }
+
+        .emoji-text {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #475569;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        @media (min-width: 640px) {
+            .emoji-text {
+                font-size: 0.75rem;
+            }
+        }
+
+        .emoji-selector input[type="radio"]:checked + .emoji-label .emoji-text {
+            color: var(--primary-red);
+        }
+
+        /* ----------------------------------------------------------------------------
+           ROUTING & VIEW MANAGEMENT
+           ---------------------------------------------------------------------------- */
+        .app-view {
+            display: none;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        .app-view.is-active {
+            display: flex;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* ----------------------------------------------------------------------------
+           LOADING SPINNER (CSS ONLY)
+           ---------------------------------------------------------------------------- */
+        .spinner-loader {
+            display: inline-block;
+            width: 1.25rem;
+            height: 1.25rem;
+            border-width: 3px;
+            border-style: solid;
+            border-color: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #ffffff;
+            animation: spin 1s linear infinite;
+        }
+        
+        .spinner-loader.dark {
+            border-color: rgba(0, 0, 0, 0.1);
+            border-top-color: #0f172a;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ----------------------------------------------------------------------------
+           DASHBOARD SPECIFIC STYLES (COMPACT LAYOUT)
+           ---------------------------------------------------------------------------- */
+        .table-container-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: #334155 transparent;
+        }
+        
+        .table-container-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        .table-container-scroll::-webkit-scrollbar-thumb {
+            background-color: #334155;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body id="mainApplicationBody" class="theme-portal relative">
+
+    <!-- 
+      ================================================================================
+      BACKGROUND MESH ANIMATION ELEMENT
+      ================================================================================
+    -->
+    <div class="bg-animated-wrapper" aria-hidden="true">
+        <div class="mesh-blob blob-primary"></div>
+        <div class="mesh-blob blob-secondary"></div>
+    </div>
+
+    <!-- 
+      ================================================================================
+      TOAST NOTIFICATION CONTAINER
+      Tempat dimana semua notifikasi pop-up akan dirender
+      ================================================================================
+    -->
+    <div id="toastNotificationContainer" class="fixed top-5 right-5 z-[9999] flex flex-col gap-3 pointer-events-none w-full max-w-xs px-4 sm:px-0"></div>
+
+    <!-- 
+      ================================================================================
+      VIEW 1: PORTAL (LANDING PAGE)
+      Tampilan pertama untuk memilih role (Pengunjung atau Admin)
+      ================================================================================
+    -->
+    <main id="viewPortal" class="app-view is-active min-h-screen flex-col items-center justify-center p-4 relative z-10">
+        <div class="max-w-4xl w-full mx-auto">
+            
+            <!-- Header Portal -->
+            <header class="text-center mb-12 anim-fade-in">
+                <div class="inline-flex items-center justify-center p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 mb-6 shadow-2xl">
+                    <i class="fas fa-satellite-dish text-5xl text-red-500"></i>
+                </div>
+                <h1 class="text-4xl md:text-6xl font-extrabold text-white mb-4 tracking-tight drop-shadow-lg">
+                    Sistem Layanan <span class="text-red-500">GraPARI</span>
+                </h1>
+                <p class="text-lg md:text-xl text-slate-300 font-medium tracking-wide">
+                    Portal Buku Tamu Digital & Analitik Kepuasan Pelanggan
+                </p>
+            </header>
+
+            <!-- Card Pilihan Role -->
+            <section class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 px-4 anim-fade-in" style="animation-delay: 0.15s;">
+                
+                <!-- Opsi 1: Form Pengunjung -->
+                <button type="button" onclick="ApplicationRouter.navigate('form')" class="group relative overflow-hidden rounded-3xl bg-white p-8 md:p-10 text-left transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-red-500/30 focus:outline-none focus:ring-4 focus:ring-red-500/50">
+                    <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-red-50 transition-transform duration-700 group-hover:scale-[2.5] ease-out"></div>
+                    <div class="relative z-10">
+                        <div class="w-16 h-16 rounded-2xl bg-red-100 flex items-center justify-center mb-6 text-red-600 transition-transform duration-300 group-hover:scale-110">
+                            <i class="fas fa-users text-3xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-extrabold text-slate-800 mb-3">Isi Buku Tamu</h2>
+                        <p class="text-base text-slate-500 mb-8 leading-relaxed font-medium">
+                            Masuk sebagai pengunjung untuk mengisi data kunjungan dan memberikan penilaian terhadap layanan kami hari ini.
+                        </p>
+                        <div class="inline-flex items-center px-5 py-2.5 rounded-full bg-red-50 text-red-600 font-bold text-sm group-hover:bg-red-600 group-hover:text-white transition-colors duration-300">
+                            Mulai Mengisi Form <i class="fas fa-arrow-right ml-2 transition-transform duration-300 group-hover:translate-x-1"></i>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- Opsi 2: Login Admin -->
+                <button type="button" onclick="ModalManager.openLoginModal()" class="group relative overflow-hidden rounded-3xl bg-slate-800/80 backdrop-blur-xl border border-slate-700 p-8 md:p-10 text-left transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl hover:shadow-blue-500/30 hover:border-slate-600 focus:outline-none focus:ring-4 focus:ring-blue-500/50">
+                    <div class="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-slate-700 transition-transform duration-700 group-hover:scale-[2.5] ease-out"></div>
+                    <div class="relative z-10">
+                        <div class="w-16 h-16 rounded-2xl bg-slate-700 flex items-center justify-center mb-6 text-blue-400 transition-transform duration-300 group-hover:scale-110">
+                            <i class="fas fa-user-shield text-3xl"></i>
+                        </div>
+                        <h2 class="text-2xl font-extrabold text-white mb-3">Dashboard Admin</h2>
+                        <p class="text-base text-slate-400 mb-8 leading-relaxed font-medium">
+                            Masuk sebagai staf atau manajer GraPARI untuk mengakses riwayat data, analitik statistik, dan laporan kepuasan.
+                        </p>
+                        <div class="inline-flex items-center px-5 py-2.5 rounded-full bg-slate-700 text-blue-400 font-bold text-sm group-hover:bg-blue-500 group-hover:text-white transition-colors duration-300">
+                            Masuk Portal Admin <i class="fas fa-lock ml-2 transition-transform duration-300 group-hover:translate-x-1"></i>
+                        </div>
+                    </div>
+                </button>
+            </section>
+            
+            <!-- Footer Portal -->
+            <footer class="text-center mt-16 text-slate-400 text-sm font-semibold anim-fade-in" style="animation-delay: 0.3s;">
+                <p>&copy; <span id="copyrightYear"></span> Telkomsel GraPARI Bengkulu.</p>
+                <p class="text-xs mt-1 opacity-60">Sistem Internal Terenkripsi</p>
+            </footer>
+        </div>
+    </main>
+
+    <!-- 
+      ================================================================================
+      VIEW 2: FORM BUKU TAMU PUBLIK
+      ================================================================================
+    -->
+    <main id="viewForm" class="app-view min-h-screen items-center justify-center p-4 relative z-10 py-10">
+        <div class="glass-light w-full max-w-[600px] rounded-[2rem] p-6 sm:p-8 md:p-10 anim-scale-in">
+            
+            <!-- Navigasi Kembali -->
+            <nav class="mb-6">
+                <button type="button" onclick="ApplicationRouter.navigate('portal')" class="inline-flex items-center text-slate-500 hover:text-slate-800 transition-colors text-sm font-bold bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-full">
+                    <i class="fas fa-chevron-left mr-2 text-xs"></i> Kembali ke Menu Utama
+                </button>
+            </nav>
+
+            <!-- Header Form -->
+            <header class="text-center border-b border-slate-200 pb-6 mb-8">
+                <div class="w-16 h-16 bg-red-50 rounded-2xl mx-auto flex items-center justify-center mb-4">
+                    <i class="fas fa-clipboard-list text-3xl text-red-600"></i>
+                </div>
+                <h1 class="text-3xl font-extrabold text-[#e31837] mb-2 tracking-tight">GraPARI Bengkulu</h1>
+                <p class="text-slate-500 text-sm font-semibold">Formulir Buku Tamu & Penilaian Layanan</p>
+            </header>
+
+            <!-- Formulir Utama -->
+            <form id="publicFeedbackForm" class="space-y-6" novalidate>
+                
+                <!-- Input Group: Data Diri -->
+                <fieldset class="space-y-5">
+                    <legend class="sr-only">Data Diri Pengunjung</legend>
+                    
+                    <div class="form-group">
+                        <label for="inputFullName" class="block text-sm font-bold text-slate-700 mb-1.5">
+                            Nama Lengkap Sesuai KTP <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <i class="fas fa-id-card absolute left-4 top-3.5 text-slate-400"></i>
+                            <input type="text" id="inputFullName" name="fullName" required class="form-input-modern pl-11" placeholder="Cth: Budi Santoso" autocomplete="name">
+                        </div>
+                        <p id="errorFullName" class="text-red-500 text-xs font-semibold mt-1 hidden">Nama lengkap wajib diisi.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inputPhoneNumber" class="block text-sm font-bold text-slate-700 mb-1.5">
+                            Nomor Telkomsel <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <i class="fas fa-mobile-alt absolute left-4 top-3.5 text-slate-400 text-lg"></i>
+                            <input type="tel" id="inputPhoneNumber" name="phoneNumber" required class="form-input-modern pl-11" placeholder="Cth: 081234567890" autocomplete="tel" inputmode="numeric">
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-1.5 ml-1 font-medium"><i class="fas fa-info-circle mr-1"></i>Gunakan awalan 08xx (Cth: 0811, 0812, 0852)</p>
+                        <p id="errorPhoneNumber" class="text-red-500 text-xs font-semibold mt-1 hidden">Nomor HP tidak valid.</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="inputServiceType" class="block text-sm font-bold text-slate-700 mb-1.5">
+                            Keperluan Layanan <span class="text-red-500">*</span>
+                        </label>
+                        <div class="relative">
+                            <i class="fas fa-concierge-bell absolute left-4 top-3.5 text-slate-400"></i>
+                            <select id="inputServiceType" name="serviceType" required class="form-input-modern pl-11 appearance-none cursor-pointer text-slate-700">
+                                <option value="" disabled selected>-- Silakan Pilih Layanan --</option>
+                                <option value="Ganti Kartu / Upgrade 4G">Ganti Kartu / Upgrade 4G</option>
+                                <option value="Migrasi Halo">Migrasi Halo</option>
+                                <option value="Komplain Jaringan">Komplain Jaringan</option>
+                                <option value="IndiHome">IndiHome / Pemasangan Baru</option>
+                                <option value="Pembelian Paket Data Orbit">Pembelian Paket Data Orbit</option>
+                                <option value="Informasi Promo">Informasi Promo</option>
+                                <option value="Lainnya">Keperluan Lainnya</option>
+                            </select>
+                            <i class="fas fa-chevron-down absolute right-4 top-4 text-slate-400 text-sm pointer-events-none"></i>
+                        </div>
+                        <p id="errorServiceType" class="text-red-500 text-xs font-semibold mt-1 hidden">Silakan pilih jenis layanan.</p>
+                    </div>
+                </fieldset>
+
+                <!-- Input Group: Penilaian (Rating Emoji) -->
+                <fieldset class="pt-6 border-t border-slate-200">
+                    <legend class="block text-sm font-extrabold text-slate-800 mb-4 text-center w-full">
+                        Seberapa puas Anda dengan pelayanan kami hari ini? <span class="text-red-500">*</span>
+                    </legend>
+                    <div class="rating-grid-container" id="ratingContainer">
+                        <div class="emoji-selector">
+                            <input type="radio" name="inputSatisfactionRating" id="ratingScore1" value="1" required>
+                            <label for="ratingScore1" class="emoji-label">
+                                <span class="emoji-character">😡</span>
+                                <span class="emoji-text">Kecewa</span>
+                            </label>
+                        </div>
+                        <div class="emoji-selector">
+                            <input type="radio" name="inputSatisfactionRating" id="ratingScore2" value="2">
+                            <label for="ratingScore2" class="emoji-label">
+                                <span class="emoji-character">🙁</span>
+                                <span class="emoji-text">Kurang</span>
+                            </label>
+                        </div>
+                        <div class="emoji-selector">
+                            <input type="radio" name="inputSatisfactionRating" id="ratingScore3" value="3">
+                            <label for="ratingScore3" class="emoji-label">
+                                <span class="emoji-character">😐</span>
+                                <span class="emoji-text">Cukup</span>
+                            </label>
+                        </div>
+                        <div class="emoji-selector">
+                            <input type="radio" name="inputSatisfactionRating" id="ratingScore4" value="4">
+                            <label for="ratingScore4" class="emoji-label">
+                                <span class="emoji-character">🙂</span>
+                                <span class="emoji-text">Puas</span>
+                            </label>
+                        </div>
+                        <div class="emoji-selector">
+                            <input type="radio" name="inputSatisfactionRating" id="ratingScore5" value="5">
+                            <label for="ratingScore5" class="emoji-label">
+                                <span class="emoji-character">😍</span>
+                                <span class="emoji-text">Sangat Puas</span>
+                            </label>
+                        </div>
+                    </div>
+                    <p id="errorRating" class="text-red-500 text-xs font-semibold mt-3 text-center hidden">Mohon berikan penilaian Anda.</p>
+                </fieldset>
+
+                <!-- Input Group: Feedback Teks -->
+                <fieldset class="pt-4">
+                    <div class="form-group">
+                        <label for="inputFeedbackNotes" class="block text-sm font-bold text-slate-700 mb-1.5 flex justify-between items-end">
+                            <span>Kritik & Saran <span class="text-slate-400 font-normal text-xs">(Opsional)</span></span>
+                        </label>
+                        <textarea id="inputFeedbackNotes" name="feedbackNotes" rows="3" class="form-input-modern resize-none" placeholder="Ceritakan pengalaman Anda hari ini, atau berikan masukan agar kami dapat melayani lebih baik lagi di masa depan..."></textarea>
+                    </div>
+                </fieldset>
+
+                <!-- Area Submit Form -->
+                <div class="pt-6">
+                    <button type="submit" id="btnSubmitFeedback" class="w-full bg-[#e31837] hover:bg-[#cc1531] text-white font-extrabold text-lg py-4 px-6 rounded-xl shadow-xl shadow-red-500/30 transition-all duration-300 transform active:scale-[0.98] flex justify-center items-center gap-3">
+                        <span id="btnSubmitText">Kirim Penilaian</span>
+                        <i id="btnSubmitIcon" class="fas fa-paper-plane"></i>
+                    </button>
+                    <p class="text-center text-[10px] text-slate-400 mt-4 font-medium">
+                        <i class="fas fa-lock mr-1"></i> Data Anda tersimpan dengan aman di sistem lokal kami.
+                    </p>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- 
+      ================================================================================
+      MODAL COMPONENT: LOGIN ADMIN
+      Modal tersembunyi yang digunakan untuk proses otentikasi staf
+      ================================================================================
+    -->
+    <div id="modalAdminLogin" class="fixed inset-0 bg-slate-900/85 backdrop-blur-md z-50 hidden opacity-0 transition-opacity duration-400 flex items-center justify-center p-4" aria-modal="true" role="dialog">
+        <div class="bg-white rounded-[2rem] w-full max-w-[400px] p-8 md:p-10 shadow-2xl relative transform scale-95 transition-transform duration-400 ease-out" id="modalAdminLoginContent">
+            
+            <!-- Tombol Tutup Modal -->
+            <button type="button" onclick="ModalManager.closeLoginModal()" class="absolute top-5 right-5 text-slate-400 hover:text-slate-800 transition-colors h-10 w-10 flex items-center justify-center rounded-full hover:bg-slate-100 bg-slate-50" aria-label="Tutup Modal">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+            
+            <!-- Header Modal -->
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-900 mb-4 shadow-lg shadow-slate-900/20">
+                    <i class="fas fa-user-shield text-2xl text-blue-400"></i>
+                </div>
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight">Otentikasi Staf</h2>
+                <p class="text-sm text-slate-500 mt-2 font-medium">Silakan masukkan kredensial sistem Anda.</p>
+            </div>
+            
+            <!-- Form Login -->
+            <form id="adminAuthenticationForm" class="space-y-5" novalidate>
+                <div class="form-group">
+                    <label for="authUsername" class="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-widest">Username Akses</label>
+                    <div class="relative">
+                        <i class="fas fa-user absolute left-4 top-4 text-slate-400 text-sm"></i>
+                        <input type="text" id="authUsername" name="username" class="w-full pl-10 pr-4 py-3.5 rounded-xl border-2 border-slate-200 focus:border-slate-900 focus:ring-0 outline-none text-sm font-bold text-slate-800 transition-colors bg-slate-50 focus:bg-white" placeholder="Masukkan ID Staf" required autocomplete="username">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="authPassword" class="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-widest">Kata Sandi</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-4 top-4 text-slate-400 text-sm"></i>
+                        <input type="password" id="authPassword" name="password" class="w-full pl-10 pr-12 py-3.5 rounded-xl border-2 border-slate-200 focus:border-slate-900 focus:ring-0 outline-none text-sm font-bold text-slate-800 transition-colors bg-slate-50 focus:bg-white" placeholder="••••••••" required autocomplete="current-password">
+                        <button type="button" onclick="ModalManager.togglePasswordVisibility()" class="absolute right-4 top-4 text-slate-400 hover:text-slate-800 transition-colors" title="Tampilkan/Sembunyikan Sandi">
+                            <i class="fas fa-eye" id="passwordToggleIcon"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Notifikasi Error Login -->
+                <div id="loginErrorMessage" class="hidden bg-rose-50 border border-rose-200 p-3 rounded-xl flex items-start gap-3 mt-4 anim-scale-in">
+                    <i class="fas fa-exclamation-circle text-rose-500 mt-0.5"></i> 
+                    <div>
+                        <h4 class="text-xs font-bold text-rose-700">Akses Ditolak</h4>
+                        <p class="text-[11px] text-rose-600 mt-0.5 font-medium">Username atau kata sandi tidak cocok dengan basis data sistem.</p>
+                    </div>
+                </div>
+
+                <div class="pt-4">
+                    <button type="submit" id="btnExecuteLogin" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-4 px-4 rounded-xl transition-all duration-300 active:scale-[0.98] flex justify-center items-center shadow-lg shadow-slate-900/30">
+                        <span id="btnLoginText">Verifikasi & Masuk</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 
+      ================================================================================
+      VIEW 3: DASHBOARD ADMIN (ENTERPRISE COMPACT LAYOUT)
+      Desain diatur dengan flex-1 dan h-screen agar sesuai dengan ukuran monitor 
+      tanpa perlu melakukan scroll bar panjang di browser.
+      ================================================================================
+    -->
+    <main id="viewAdminDashboard" class="app-view flex-col h-screen overflow-hidden text-slate-200 p-2 sm:p-3 md:p-4 w-full relative z-10">
+        
+        <!-- Wadah Utama Dashboard (Max Width constraint & Full Height) -->
+        <div class="max-w-[1600px] mx-auto w-full h-full flex flex-col gap-3 md:gap-4">
+            
+            <!-- SEKSI 1: HEADER & NAVIGATION (Static/Shrink-0) -->
+            <header class="glass-dark-card rounded-2xl p-4 md:p-5 flex flex-col lg:flex-row justify-between items-center gap-4 shadow-xl shrink-0 border border-slate-700/60 z-20">
+                
+                <!-- Logo & Titles -->
+                <div class="flex items-center gap-4 w-full lg:w-auto justify-center lg:justify-start">
+                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center shadow-lg shadow-red-500/20 shrink-0 border border-red-400/30">
+                        <i class="fas fa-chart-line text-xl text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl md:text-2xl font-black text-white tracking-wide leading-tight">Admin Dashboard</h1>
+                        <p class="text-[11px] md:text-xs text-slate-400 font-medium tracking-wide">GraPARI Bengkulu — Analytical Data Center</p>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons Toolbar -->
+                <nav class="flex flex-wrap justify-center lg:justify-end gap-2 md:gap-3 w-full lg:w-auto">
+                    <button type="button" onclick="ApplicationRouter.navigate('portal')" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold transition-all border border-slate-600 flex items-center gap-2 hover:shadow-lg">
+                        <i class="fas fa-home text-slate-400"></i> Beranda
+                    </button>
+                    
+                    <button type="button" onclick="DashboardController.refreshAllData()" id="btnRefreshData" class="px-4 py-2 bg-[#e31837] hover:bg-[#cc1531] rounded-lg text-xs font-bold transition-all shadow-lg shadow-red-500/20 flex items-center gap-2 text-white">
+                        <i class="fas fa-sync-alt"></i> Segarkan Data
+                    </button>
+                    
+                    <button type="button" onclick="DataExportService.generateAndDownloadCSV()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-xs font-bold transition-all shadow-lg shadow-emerald-500/20 flex items-center gap-2 text-white">
+                        <i class="fas fa-file-csv"></i> Unduh CSV
+                    </button>
+                    
+                    <button type="button" onclick="DashboardController.promptGenerateMockData()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-xs font-bold transition-all shadow-lg shadow-indigo-500/20 flex items-center gap-2 text-white" title="Isi data dummy otomatis">
+                        <i class="fas fa-magic"></i> Mock Data
+                    </button>
+
+                    <button type="button" onclick="DashboardController.promptClearDatabase()" class="px-4 py-2 bg-slate-800 hover:bg-rose-900 hover:text-rose-200 text-rose-400 rounded-lg text-xs font-bold transition-all border border-rose-900/50 hover:border-rose-700 flex items-center gap-2">
+                        <i class="fas fa-trash-alt"></i> Reset Sistem
+                    </button>
+                    
+                    <div class="w-px h-8 bg-slate-700 hidden lg:block mx-1"></div>
+                    
+                    <button type="button" onclick="ApplicationSession.logout()" class="px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg text-xs font-bold transition-all flex items-center gap-2">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </nav>
+            </header>
+
+            <!-- SEKSI 2: KARTU STATISTIK & VISUALISASI (Static/Shrink-0) -->
+            <section class="grid grid-cols-1 lg:grid-cols-4 gap-3 md:gap-4 shrink-0 z-10">
+                
+                <!-- Kolom Kiri: Widget Angka -->
+                <div class="lg:col-span-1 flex flex-col gap-3 md:gap-4 h-full">
+                    
+                    <!-- Widget 1: Total Pengunjung -->
+                    <article class="glass-dark-card rounded-2xl p-5 md:p-6 shadow-xl border-l-[5px] border-l-[#e31837] flex-1 flex flex-col justify-center relative overflow-hidden group">
+                        <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-slate-800/50 rounded-full blur-xl group-hover:bg-red-900/20 transition-colors duration-500 z-0"></div>
+                        <div class="relative z-10">
+                            <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <i class="fas fa-users text-slate-500"></i> Total Pengunjung
+                            </p>
+                            <div class="flex items-baseline gap-2 mt-1">
+                                <h2 id="kpiTotalVisitors" class="text-5xl md:text-6xl font-black text-white tracking-tighter">0</h2>
+                                <span class="text-xs font-semibold text-slate-500">Pelanggan</span>
+                            </div>
+                        </div>
+                    </article>
+                    
+                    <!-- Widget 2: Rata-Rata Kepuasan -->
+                    <article class="glass-dark-card rounded-2xl p-5 md:p-6 shadow-xl border-l-[5px] border-l-yellow-500 flex-1 flex flex-col justify-center relative overflow-hidden group">
+                        <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-slate-800/50 rounded-full blur-xl group-hover:bg-yellow-900/20 transition-colors duration-500 z-0"></div>
+                        <div class="relative z-10">
+                            <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-2">
+                                <i class="fas fa-star text-yellow-500"></i> Rata-rata Penilaian
+                            </p>
+                            <div class="flex items-baseline gap-1 mt-1">
+                                <h2 id="kpiAverageScore" class="text-5xl md:text-6xl font-black text-[#e31837] tracking-tighter">0.0</h2>
+                                <span class="text-xl font-bold text-slate-600">/ 5.0</span>
+                            </div>
+                            <div id="kpiStarsContainer" class="mt-2 flex gap-1 text-slate-600 text-sm h-5">
+                                <!-- Stars injected by JS -->
+                            </div>
+                        </div>
+                    </article>
+                </div>
+
+                <!-- Kolom Tengah: Progress Bar Breakdown -->
+                <article class="glass-dark-card rounded-2xl p-5 md:p-6 shadow-xl lg:col-span-2 flex flex-col justify-center">
+                    <header class="flex justify-between items-center mb-5">
+                        <h3 class="text-sm font-extrabold text-white flex items-center gap-2 tracking-wide">
+                            <i class="fas fa-align-left text-slate-500"></i> Distribusi Indeks Kepuasan
+                        </h3>
+                    </header>
+                    
+                    <div class="space-y-3.5 w-full" id="ratingBreakdownBarsContainer">
+                        <!-- Loading State Placeholder -->
+                        <div class="animate-pulse space-y-4">
+                            <div class="h-3 bg-slate-700/50 rounded-full w-full"></div>
+                            <div class="h-3 bg-slate-700/50 rounded-full w-5/6"></div>
+                            <div class="h-3 bg-slate-700/50 rounded-full w-4/6"></div>
+                            <div class="h-3 bg-slate-700/50 rounded-full w-2/6"></div>
+                            <div class="h-3 bg-slate-700/50 rounded-full w-1/6"></div>
+                        </div>
+                    </div>
+                </article>
+
+                <!-- Kolom Kanan: Donut Chart -->
+                <article class="glass-dark-card rounded-2xl p-5 md:p-6 shadow-xl flex flex-col lg:col-span-1 h-full min-h-[220px]">
+                    <h3 class="text-sm font-extrabold text-white mb-2 w-full text-left tracking-wide">
+                        <i class="fas fa-chart-pie text-slate-500 mr-2"></i> Proporsi Visual
+                    </h3>
+                    <div class="relative w-full flex-1 flex items-center justify-center min-h-[150px]">
+                        <canvas id="satisfactionDonutChart"></canvas>
+                        <!-- Angka di tengah Chart -->
+                        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Total</span>
+                            <span id="chartCenterTotalText" class="text-3xl font-black text-white leading-none drop-shadow-md">0</span>
+                        </div>
+                    </div>
+                </article>
+            </section>
+
+            <!-- SEKSI 3: TABEL DATA (Flex-1, Bisa di Scroll di dalam) -->
+            <section class="glass-dark-card rounded-2xl shadow-xl flex flex-col border border-slate-700/60 flex-1 min-h-0 overflow-hidden relative z-0">
+                
+                <!-- Toolbar Tabel & Pencarian -->
+                <header class="p-4 border-b border-slate-700/60 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-800/40 shrink-0">
+                    <h3 class="text-sm font-extrabold text-white flex items-center gap-2 w-full md:w-auto tracking-wide">
+                        <i class="fas fa-history text-slate-400"></i> Log Riwayat Kunjungan
+                    </h3>
+                    
+                    <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                        <!-- Dropdown Filter -->
+                        <div class="relative w-full sm:w-auto">
+                            <i class="fas fa-filter absolute left-3 top-3 text-slate-500 text-xs"></i>
+                            <select id="filterDropdownService" onchange="DashboardController.executeFilters()" class="w-full sm:w-auto bg-slate-900 border border-slate-600 rounded-xl py-2.5 pl-8 pr-8 text-xs font-bold text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 appearance-none cursor-pointer">
+                                <option value="ALL">Tampilkan Semua Layanan</option>
+                                <option value="Ganti Kartu / Upgrade 4G">Ganti Kartu / Upgrade 4G</option>
+                                <option value="Migrasi Halo">Migrasi Halo</option>
+                                <option value="Komplain Jaringan">Komplain Jaringan</option>
+                                <option value="IndiHome">IndiHome / Pemasangan Baru</option>
+                                <option value="Pembelian Produk Orbit">Pembelian Produk Orbit</option>
+                                <option value="Informasi Promo">Informasi Promo</option>
+                            </select>
+                            <i class="fas fa-chevron-down absolute right-3 top-3.5 text-slate-500 text-xs pointer-events-none"></i>
+                        </div>
+                        
+                        <!-- Kolom Pencarian -->
+                        <div class="relative w-full sm:w-64">
+                            <i class="fas fa-search absolute left-3 top-3 text-slate-500 text-xs"></i>
+                            <input type="text" id="inputSearchQuery" onkeyup="DashboardController.handleSearchInput(event)" placeholder="Ketik nama / nomor HP..." class="w-full bg-slate-900 border border-slate-600 rounded-xl py-2.5 pl-8 pr-4 text-xs font-medium text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                        </div>
+                    </div>
+                </header>
+                
+                <!-- Kontainer Tabel Ber-scroll -->
+                <div class="flex-1 overflow-auto bg-[#0b1120] relative table-container-scroll">
+                    <table class="w-full text-left border-collapse whitespace-nowrap min-w-[950px]">
+                        <thead class="sticky top-0 bg-slate-800/95 backdrop-blur-sm z-10 shadow-md">
+                            <tr class="text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-700/80">
+                                <th class="py-3.5 px-4 pl-5 w-16 text-center">NO</th>
+                                <th class="py-3.5 px-4 w-44">TIMESTAMP (WAKTU)</th>
+                                <th class="py-3.5 px-4">IDENTITAS PELANGGAN</th>
+                                <th class="py-3.5 px-4">NOMOR KONTAK</th>
+                                <th class="py-3.5 px-4">KATEGORI LAYANAN</th>
+                                <th class="py-3.5 px-4">RATING</th>
+                                <th class="py-3.5 px-4 pr-5 w-1/4">CATATAN / KRITIK</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTableBody" class="text-xs divide-y divide-slate-800/60">
+                            <!-- Baris tabel akan dirender disini oleh JavaScript -->
+                        </tbody>
+                    </table>
+                    
+                    <!-- State Kosong jika tidak ada data -->
+                    <div id="emptyTableState" class="hidden absolute inset-0 flex flex-col items-center justify-center p-8 text-slate-500">
+                        <i class="fas fa-folder-open text-5xl mb-4 opacity-40"></i>
+                        <h4 class="text-lg font-bold text-slate-400">Basis Data Kosong</h4>
+                        <p class="text-sm mt-1 text-center">Belum ada riwayat kunjungan atau data tidak ditemukan pada filter ini.</p>
+                        <button onclick="DashboardController.promptGenerateMockData()" class="mt-4 px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg border border-slate-700 transition-colors">
+                            <i class="fas fa-magic mr-1"></i> Generate Dummy Data
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Footer & Pagination -->
+                <footer class="p-3 md:p-4 border-t border-slate-700/60 flex flex-col sm:flex-row justify-between items-center gap-3 bg-slate-800/40 shrink-0">
+                    <div class="text-[11px] text-slate-400 font-semibold" id="paginationStatusText">
+                        Status: Menginisialisasi sistem data...
+                    </div>
+                    
+                    <div class="flex gap-2">
+                        <button type="button" onclick="DashboardController.navigatePage(-1)" id="btnPaginationPrev" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-extrabold flex items-center gap-2 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500">
+                            <i class="fas fa-chevron-left text-[10px]"></i> Sebelumnya
+                        </button>
+                        <button type="button" onclick="DashboardController.navigatePage(1)" id="btnPaginationNext" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-xs font-extrabold flex items-center gap-2 border border-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-500">
+                            Selanjutnya <i class="fas fa-chevron-right text-[10px]"></i>
+                        </button>
+                    </div>
+                </footer>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- 
+      ================================================================================
+      SISTEM JAVASCRIPT UTAMA (ARSITEKTUR SKALA ENTERPRISE)
+      - Semua kode dikelompokkan ke dalam Class (OOP).
+      - Dilengkapi dengan dokumentasi JSDoc penuh.
+      - Error handling ekstensif dengan try-catch.
+      ================================================================================
+    -->
+    <script>
+        /**
+         * ============================================================================
+         * GLOBAL CONFIGURATION & CONSTANTS
+         * Berisi seluruh pengaturan statis agar mudah disesuaikan di masa depan.
+         * ============================================================================
+         */
+        const AppConfig = {
+            System: {
+                NAME: "Sistem GraPARI Bengkulu",
+                VERSION: "3.5.0 Enterprise",
+                MAX_ROWS_PER_PAGE: 8, // Dibatasi agar tabel pas di layar monitor standar
+                STORAGE_KEY_DATA: 'enterprise_grapari_data_db',
+                STORAGE_KEY_SESSION: 'enterprise_grapari_admin_auth'
+            },
+            Credentials: {
+                // Kredensial default (hanya untuk simulasi lokal ini)
+                DEFAULT_USERNAME: 'admin',
+                DEFAULT_PASSWORD: 'admin123'
+            },
+            RatingDictionary: {
+                5: { label: "Sangat Puas", valCode: "(5)", icon: "😍", txtColor: "text-emerald-400", bgColor: "bg-emerald-500/10", borderColor: "border-emerald-500/20", hex: "#10b981" },
+                4: { label: "Puas", valCode: "(4)", icon: "🙂", txtColor: "text-blue-400", bgColor: "bg-blue-500/10", borderColor: "border-blue-500/20", hex: "#3b82f6" },
+                3: { label: "Cukup", valCode: "(3)", icon: "😐", txtColor: "text-yellow-400", bgColor: "bg-yellow-500/10", borderColor: "border-yellow-500/20", hex: "#eab308" },
+                2: { label: "Kurang", valCode: "(2)", icon: "🙁", txtColor: "text-orange-400", bgColor: "bg-orange-500/10", borderColor: "border-orange-500/20", hex: "#f97316" },
+                1: { label: "Kecewa", valCode: "(1)", icon: "😡", txtColor: "text-rose-400", bgColor: "bg-rose-500/10", borderColor: "border-rose-500/20", hex: "#f43f5e" }
+            },
+            TelkomselPrefixes: ['0811','0812','0813','0821','0822','0823','0852','0853','0851']
+        };
+
+        /**
+         * ============================================================================
+         * UTILITY CLASS: LoggerService
+         * Menangani konsol log dengan cara yang elegan untuk debugging.
+         * ============================================================================
+         */
+        class LoggerService {
+            /** @param {string} msg - Pesan info */
+            static info(msg) { console.info(`[INFO - ${AppConfig.System.NAME}] ${msg}`); }
+            /** @param {string} msg - Pesan peringatan */
+            static warn(msg) { console.warn(`[WARN - ${AppConfig.System.NAME}] ${msg}`); }
+            /** @param {string} msg - Pesan error @param {Error} err - Objek error */
+            static error(msg, err = null) { 
+                console.error(`[ERROR - ${AppConfig.System.NAME}] ${msg}`); 
+                if(err) console.error(err);
+            }
+        }
+
+        /**
+         * ============================================================================
+         * UTILITY CLASS: ToastManager
+         * Mengontrol pembuatan dan penghapusan notifikasi UI yang interaktif.
+         * ============================================================================
+         */
+        class ToastManager {
+            /**
+             * Menampilkan toast notification.
+             * @param {string} title - Judul notifikasi
+             * @param {string} message - Isi pesan
+             * @param {'success'|'error'|'warning'|'info'} type - Tipe desain
+             * @param {number} durationMs - Durasi tampil dalam milidetik
+             */
+            static show(title, message, type = 'info', durationMs = 3500) {
+                try {
+                    const container = document.getElementById('toastNotificationContainer');
+                    if (!container) return;
+
+                    const toastId = 'toast_id_' + Date.now() + Math.random().toString(36).substring(2, 9);
+                    const toastElement = document.createElement('div');
+                    toastElement.id = toastId;
+                    
+                    // Style config
+                    let borderClass = "border-l-[5px] ";
+                    let iconHtml = "";
+                    let bgIconClass = "";
+                    
+                    switch(type) {
+                        case 'success':
+                            borderClass += "border-emerald-500 bg-white";
+                            iconHtml = '<i class="fas fa-check text-emerald-600 text-lg"></i>';
+                            bgIconClass = 'bg-emerald-100';
+                            break;
+                        case 'error':
+                            borderClass += "border-rose-500 bg-white";
+                            iconHtml = '<i class="fas fa-exclamation text-rose-600 text-lg"></i>';
+                            bgIconClass = 'bg-rose-100';
+                            break;
+                        case 'warning':
+                            borderClass += "border-yellow-500 bg-white";
+                            iconHtml = '<i class="fas fa-exclamation-triangle text-yellow-600 text-base"></i>';
+                            bgIconClass = 'bg-yellow-100';
+                            break;
+                        default: // info
+                            borderClass += "border-blue-500 bg-white";
+                            iconHtml = '<i class="fas fa-info text-blue-600 text-lg"></i>';
+                            bgIconClass = 'bg-blue-100';
+                    }
+
+                    toastElement.className = `toast-enter flex items-start p-3.5 shadow-2xl rounded-xl ${borderClass} pointer-events-auto border border-slate-100 relative overflow-hidden group w-full`;
+                    
+                    toastElement.innerHTML = `
+                        <div class="flex-shrink-0 mr-3 mt-0.5">
+                            <div class="w-8 h-8 rounded-full ${bgIconClass} flex items-center justify-center">
+                                ${iconHtml}
+                            </div>
+                        </div>
+                        <div class="flex-1 pr-6">
+                            <h4 class="text-sm font-extrabold text-slate-800 tracking-tight leading-tight">${title}</h4>
+                            <p class="text-[11px] text-slate-500 mt-1 leading-snug font-medium">${message}</p>
+                        </div>
+                        <button type="button" onclick="document.getElementById('${toastId}').remove()" class="absolute top-3 right-3 text-slate-300 hover:text-slate-600 transition-colors bg-slate-50 hover:bg-slate-100 w-6 h-6 rounded-full flex items-center justify-center">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    `;
+                    
+                    container.appendChild(toastElement);
+                    LoggerService.info(`Toast rendered: [${type.toUpperCase()}] ${title}`);
+
+                    // Timeout removal logic
+                    setTimeout(() => {
+                        const el = document.getElementById(toastId);
+                        if (el) {
+                            el.classList.replace('toast-enter', 'toast-leave');
+                            setTimeout(() => {
+                                if(el && el.parentNode) el.parentNode.removeChild(el);
+                            }, 400); // Wait for slide out animation
+                        }
+                    }, durationMs);
+                } catch (error) {
+                    LoggerService.error("Failed to render toast notification", error);
+                }
+            }
+        }
+
+        /**
+         * ============================================================================
+         * UTILITY CLASS: DateFormatter
+         * Mengatur standarisasi format waktu agar seragam di semua komponen.
+         * ============================================================================
+         */
+        class DateFormatter {
+            /** 
+             * Mengembalikan waktu saat ini dalam string format: DD/MM/YYYY, HH.MM.SS 
+             * @returns {string} String waktu terformat
+             */
+            static getCurrentTimestampStr() {
+                const now = new Date();
+                const d = String(now.getDate()).padStart(2, '0');
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const y = now.getFullYear();
+                const hh = String(now.getHours()).padStart(2, '0');
+                const mm = String(now.getMinutes()).padStart(2, '0');
+                const ss = String(now.getSeconds()).padStart(2, '0');
+                return `${d}/${m}/${y}, ${hh}.${mm}.${ss}`;
+            }
+        }
+
+        /**
+         * ============================================================================
+         * UTILITY CLASS: ValidationService
+         * Kumpulan metode validasi data spesifik sebelum masuk database.
+         * ============================================================================
+         */
+        class ValidationService {
+            /**
+             * Cek apakah nomor berawalan Telkomsel
+             * @param {string} phone - Nomor string
+             * @returns {boolean} validitas
+             */
+            static isTelkomselNumber(phone) {
+                // Menghapus karakter non-digit
+                const cleanPhone = phone.replace(/\D/g, '');
+                if (cleanPhone.length < 10 || cleanPhone.length > 13) return false;
+                
+                let isMatch = false;
+                for (let i = 0; i < AppConfig.TelkomselPrefixes.length; i++) {
+                    if (cleanPhone.startsWith(AppConfig.TelkomselPrefixes[i])) {
+                        isMatch = true;
+                        break;
+                    }
+                }
+                return isMatch; // Wajib prefix telkomsel (sesuai req: form GraPARI)
+            }
+        }
+
+        /**
+         * ============================================================================
+         * SERVICE CLASS: LocalDatabaseController
+         * Mengontrol pembacaan dan penulisan JSON ke LocalStorage Browser.
+         * ============================================================================
+         */
+        class LocalDatabaseController {
+            
+            /** @returns {Array<Object>} Daftar record penilaian */
+            static fetchAllRecords() {
+                try {
+                    const rawData = localStorage.getItem(AppConfig.System.STORAGE_KEY_DATA);
+                    return rawData ? JSON.parse(rawData) : [];
+                } catch (error) {
+                    LoggerService.error("Gagal melakukan parsing data JSON dari LocalStorage", error);
+                    return [];
+                }
+            }
+
+            /** 
+             * @param {Object} newPayload - Record tunggal yang ingin disimpan
+             * @returns {boolean} Status kesuksesan
+             */
+            static insertRecord(newPayload) {
+                try {
+                    const existingData = this.fetchAllRecords();
+                    // Menambahkan di urutan paling awal (LIFO - Last In First Out)
+                    existingData.unshift(newPayload); 
+                    
+                    const stringifiedData = JSON.stringify(existingData);
+                    localStorage.setItem(AppConfig.System.STORAGE_KEY_DATA, stringifiedData);
+                    
+                    LoggerService.info(`Sukses menyimpan record baru: ID ${newPayload.id}`);
+                    return true;
+                } catch (error) {
+                    LoggerService.error("Storage error (mungkin quota penuh)", error);
+                    return false;
+                }
+            }
+
+            /** Menghapus total tabel di storage */
+            static wipeDatabase() {
+                try {
+                    localStorage.removeItem(AppConfig.System.STORAGE_KEY_DATA);
+                    LoggerService.warn("Database telah dikosongkan total.");
+                    return true;
+                } catch (error) {
+                    LoggerService.error("Gagal menghapus database", error);
+                    return false;
+                }
+            }
+            
+            /** 
+             * Fungsi khusus untuk demo: Mengisi database dengan puluhan data fiktif
+             * Berguna agar admin bisa melihat fungsi dashboard secara instan
+             */
+            static injectMockData() {
+                try {
+                    const mockNames = ["Andi Saputra","Budi Santoso","Citra Dewi","Dewi Lestari","Eko Prasetyo","Fajar Ramadhan","Gita Savitri","Hadi Mulyadi","Indah Permatasari","Joko Widodo","Kartika Putri","Lukman Hakim"];
+                    const mockServices = ["Ganti Kartu / Upgrade 4G","Migrasi Halo","Komplain Jaringan","IndiHome","Pembelian Produk Orbit"];
+                    const mockReviews = ["Sangat mantap pelayanannya cepat","CS ramah, tapi antrian agak panjang","Bagus","Jaringan sudah normal kembali","Proses migrasi mudah", "AC kurang dingin", ""];
+                    
+                    let mockRecords = [];
+                    const amount = 35; // Jumlah data dummy
+                    
+                    for(let i = 0; i < amount; i++) {
+                        // Randomize rating with bias towards good rating
+                        const rand = Math.random();
+                        let rate = rand > 0.8 ? 5 : rand > 0.4 ? 4 : rand > 0.2 ? 3 : rand > 0.1 ? 2 : 1;
+                        
+                        mockRecords.push({
+                            id: `MOCK-${Date.now()}-${i}`,
+                            waktu: `12/08/2026, ${String(Math.floor(Math.random()*9)+8).padStart(2,'0')}.${String(Math.floor(Math.random()*60)).padStart(2,'0')}.00`,
+                            nama: mockNames[Math.floor(Math.random() * mockNames.length)] + ` ${i+1}`,
+                            noHp: `0812${Math.floor(Math.random() * 9000000) + 1000000}`,
+                            layanan: mockServices[Math.floor(Math.random() * mockServices.length)],
+                            rating: rate,
+                            kritik: mockReviews[Math.floor(Math.random() * mockReviews.length)]
+                        });
+                    }
+                    
+                    localStorage.setItem(AppConfig.System.STORAGE_KEY_DATA, JSON.stringify(mockRecords));
+                    return true;
+                } catch (e) {
+                    LoggerService.error("Gagal inject mock data", e);
+                    return false;
+                }
+            }
+        }
+
+        /**
+         * ============================================================================
+         * SERVICE CLASS: DataExportService
+         * Mengontrol kompilasi dan pengunduhan file data (CSV).
+         * ============================================================================
+         */
+        class DataExportService {
+            static generateAndDownloadCSV() {
+                LoggerService.info("Memulai proses eksportasi CSV...");
+                const dataSet = LocalDatabaseController.fetchAllRecords();
+                
+                if (!Array.isArray(dataSet) || dataSet.length === 0) {
+                    ToastManager.show("Export Dibatalkan", "Basis data sistem masih kosong. Tidak ada data yang bisa diekspor.", "warning");
+                    return;
+                }
+
+                try {
+                    // Mendefinisikan struktur Header CSV
+                    const csvHeaders = ["NO", "TIMESTAMP KUNJUNGAN", "IDENTITAS NAMA", "NOMOR HANDPHONE", "KATEGORI LAYANAN", "SKOR ANGKA", "KUALITAS RATING", "DESKRIPSI KRITIK/SARAN"];
+                    let csvContentArray = [csvHeaders.join(",")];
+                    
+                    // Melakukan iterasi dan sanitasi data
+                    dataSet.forEach((record, index) => {
+                        const no = index + 1;
+                        const waktu = `"${record.waktu}"`;
+                        const nama = `"${(record.nama || '').replace(/"/g, '""')}"`;
+                        // Penambahan kutip agar di excel terbaca string dan angka 0 di depan tidak hilang
+                        const noHp = `"${record.noHp || ''}"`; 
+                        const layanan = `"${record.layanan || ''}"`;
+                        const ratingAngka = record.rating;
+                        const ratingTeks = `"${AppConfig.RatingDictionary[record.rating].label}"`;
+                        const kritik = `"${(record.kritik || '').replace(/"/g, '""').replace(/\r?\n|\r/g, ' ')}"`;
+
+                        const rowValues = [no, waktu, nama, noHp, layanan, ratingAngka, ratingTeks, kritik];
+                        csvContentArray.push(rowValues.join(","));
+                    });
+
+                    const finalCsvString = csvContentArray.join("\n");
+                    
+                    // Membuat Blob Object
+                    const fileBlob = new Blob([finalCsvString], { type: 'text/csv;charset=utf-8;' });
+                    const downloadUrl = URL.createObjectURL(fileBlob);
+                    
+                    // Membuat elemen link tersembunyi untuk proses trigger unduhan
+                    const anchorElement = document.createElement("a");
+                    anchorElement.href = downloadUrl;
+                    
+                    // Memberi nama file dinamis berdasarkan tanggal ekspor
+                    const exportDateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                    anchorElement.download = `Laporan_Kepuasan_GraPARI_${exportDateStr}.csv`;
+                    
+                    // Menambahkan ke body, klik, lalu bersihkan (cleanup)
+                    document.body.appendChild(anchorElement);
+                    anchorElement.click();
+                    document.body.removeChild(anchorElement);
+                    URL.revokeObjectURL(downloadUrl);
+                    
+                    ToastManager.show("Proses Berhasil", "Dokumen CSV laporan kepuasan pelanggan telah mulai diunduh.", "success");
+                    LoggerService.info("Eksportasi CSV sukses dilakukan.");
+
+                } catch (error) {
+                    LoggerService.error("Proses ekspor gagal pada tahap kompilasi blob", error);
+                    ToastManager.show("Kesalahan Sistem", "Gagal menyusun file CSV. Hubungi tim teknis.", "error");
+                }
+            }
+        }
+
+        /**
+         * ============================================================================
+         * CLASS: ChartVisualizerManager
+         * Menangani implementasi instance Chart.js dan lifecycle canvas.
+         * ============================================================================
+         */
+        class ChartVisualizerManager {
+            constructor(canvasElementId, centerTextElementId) {
+                this.canvasId = canvasElementId;
+                this.centerTextId = centerTextElementId;
+                this.chartInstance = null;
+            }
+
+            /**
+             * Merender ulang donut chart dengan data distribusi rating terbaru.
+             * @param {Array<number>} countsArray - Array jumlah per rating [Puas5, Puas4, Cukup3, Kurang2, Kecewa1]
+             * @param {number} totalRecords - Jumlah total rekaman
+             */
+            renderDonut(countsArray, totalRecords) {
+                const canvasContext = document.getElementById(this.canvasId).getContext('2d');
+                
+                // Update nilai label di tengah donut chart
+                document.getElementById(this.centerTextId).innerText = totalRecords.toLocaleString('id-ID');
+
+                // Jika instance sebelumnya sudah ada, hancurkan dari memori grafis (Penting untuk cegah mem leak)
+                if (this.chartInstance) {
+                    this.chartInstance.destroy();
+                }
+
+                // Kondisi Empty State / Basis data nol
+                if (totalRecords === 0) {
+                    this.chartInstance = new Chart(canvasContext, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Basis Data Kosong'],
+                            datasets: [{
+                                data: [1], // Dummy data agar donat tergambar
+                                backgroundColor: ['#1e293b'], // Warna card bg (abu tua)
+                                borderWidth: 0
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            cutout: '75%', // Ketebalan cincin
+                            animation: false,
+                            plugins: {
+                                tooltip: { enabled: false },
+                                legend: { display: false }
+                            }
+                        }
+                    });
+                    return;
+                }
+
+                // Konfigurasi Chart.js normal dengan data
+                this.chartInstance = new Chart(canvasContext, {
+                    type: 'doughnut',
+                    data: {
+                        labels: [
+                            AppConfig.RatingDictionary[5].label,
+                            AppConfig.RatingDictionary[4].label,
+                            AppConfig.RatingDictionary[3].label,
+                            AppConfig.RatingDictionary[2].label,
+                            AppConfig.RatingDictionary[1].label
+                        ],
+                        datasets: [{
+                            data: countsArray,
+                            backgroundColor: [
+                                AppConfig.RatingDictionary[5].hex,
+                                AppConfig.RatingDictionary[4].hex,
+                                AppConfig.RatingDictionary[3].hex,
+                                AppConfig.RatingDictionary[2].hex,
+                                AppConfig.RatingDictionary[1].hex
+                            ],
+                            borderWidth: 3,
+                            borderColor: '#0f172a', // Sesuai warna background panel admin agar menyatu
+                            hoverOffset: 6,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '76%',
+                        animation: {
+                            animateScale: true,
+                            animateRotate: true,
+                            duration: 1200,
+                            easing: 'easeOutQuart'
+                        },
+                        plugins: {
+                            legend: {
+                                display: false // Sembunyikan bawaan, kita pakai custom HTML progress bar
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                                titleColor: '#ffffff',
+                                bodyColor: '#cbd5e1',
+                                bodyFont: { size: 13, family: "'Plus Jakarta Sans', sans-serif", weight: 'bold' },
+                                padding: 12,
+                                boxPadding: 8,
+                                cornerRadius: 8,
+                                borderColor: 'rgba(255,255,255,0.1)',
+                                borderWidth: 1,
+                                callbacks: {
+                                    label: function(contextItem) {
+                                        let rawValue = contextItem.raw || 0;
+                                        let pct = Math.round((rawValue / totalRecords) * 100);
+                                        return ` ${rawValue} Pelanggan (${pct}%)`;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Deklarasi global instance Visualizer
+        const mainChartManager = new ChartVisualizerManager('satisfactionDonutChart', 'chartCenterTotalText');
+
+
+        /**
+         * ============================================================================
+         * CONTROLLER CLASS: DashboardController
+         * Otak dari halaman admin. Mengurus filter, search, render stat & tabel.
+         * ============================================================================
+         */
+        class DashboardController {
+            static dbCacheRaw = [];
+            static dbCacheFiltered = [];
+            static paginationState = {
+                current: 1,
+                totalAvailable: 0
+            };
+
+            /** Lifecycle awalan saat dashboard diaktifkan */
+            static initialize() {
+                LoggerService.info("DashboardController: Initialization Started");
+                this.refreshAllData();
+            }
+
+            /** Menarik ulang data asli dari storage dan memicu proses rendering ulang */
+            static refreshAllData() {
+                // Memberi efek loading pada tombol refresh
+                const btnRef = document.getElementById('btnRefreshData');
+                if(btnRef) {
+                    const icon = btnRef.querySelector('i');
+                    icon.classList.add('fa-spin');
+                    setTimeout(() => icon.classList.remove('fa-spin'), 800);
+                }
+
+                // Pengambilan I/O storage
+                this.dbCacheRaw = LocalDatabaseController.fetchAllRecords();
+                
+                // Memicu pipeline pemrosesan
+                this.executeFilters();
+            }
+
+            /** Menjalankan pipa filtering berdasarkan keyword pencarian dan tipe layanan */
+            static executeFilters() {
+                const searchNode = document.getElementById('inputSearchQuery');
+                const filterNode = document.getElementById('filterDropdownService');
+                
+                if (!searchNode || !filterNode) return;
+
+                const queryStr = searchNode.value.toLowerCase().trim();
+                const serviceConstraint = filterNode.value;
+
+                // Proses Array.filter komprehensif
+                this.dbCacheFiltered = this.dbCacheRaw.filter(record => {
+                    // Logika Text Match (Pencarian nama atau nomor hape)
+                    const isKeywordMatch = 
+                        (record.nama && record.nama.toLowerCase().includes(queryStr)) ||
+                        (record.noHp && record.noHp.includes(queryStr));
+                    
+                    // Logika Dropdown Match
+                    const isServiceMatch = (serviceConstraint === 'ALL') ? true : (record.layanan === serviceConstraint);
+
+                    return isKeywordMatch && isServiceMatch;
+                });
+
+                // Reset ke halaman 1 tiap kali filter berubah
+                this.paginationState.current = 1;
+                this.paginationState.totalAvailable = this.dbCacheFiltered.length;
+                
+                // Memicu Update Modul View
+                this.renderKeyPerformanceIndicators();
+                this.renderRatingBreakdownSection();
+                this.renderChartVisualization();
+                this.renderDataTableSection();
+            }
+
+            /** Proxy untuk Event Listener OnKeyUp */
+            static handleSearchInput(event) {
+                // Optional: bisa menambahkan teknik debouncing disini jika data ribuan
+                this.executeFilters();
+            }
+
+            /** 
+             * Mengkalkulasi dan mencetak angka besar (Total Pengunjung, Rata-rata) 
+             */
+            static renderKeyPerformanceIndicators() {
+                const totalFiltered = this.paginationState.totalAvailable;
+                document.getElementById('kpiTotalVisitors').innerText = totalFiltered.toLocaleString('id-ID');
+
+                const starNode = document.getElementById('kpiStarsContainer');
+                const avgNode = document.getElementById('kpiAverageScore');
+
+                if (totalFiltered === 0) {
+                    avgNode.innerText = "0.0";
+                    starNode.innerHTML = '<i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i><i class="far fa-star"></i>';
+                    return;
+                }
+
+                let ratingAccumulation = 0;
+                for(let i=0; i<totalFiltered; i++){
+                    ratingAccumulation += this.dbCacheFiltered[i].rating;
+                }
+                
+                const averageCalculated = (ratingAccumulation / totalFiltered);
+                avgNode.innerText = averageCalculated.toFixed(1);
+
+                // Algoritma render bintang parsial
+                starNode.innerHTML = '';
+                for (let i = 1; i <= 5; i++) {
+                    if (averageCalculated >= i - 0.25) { // Threshold for full star
+                        starNode.innerHTML += '<i class="fas fa-star text-yellow-500 drop-shadow"></i>';
+                    } else if (averageCalculated >= i - 0.75) { // Threshold for half star
+                        starNode.innerHTML += '<i class="fas fa-star-half-alt text-yellow-500 drop-shadow"></i>';
+                    } else { // Empty star
+                        starNode.innerHTML += '<i class="far fa-star text-slate-600"></i>';
+                    }
+                }
+            }
+
+            /**
+             * Menyusun daftar HTML progress bar untuk distribusi rating 1 sampai 5.
+             */
+            static renderRatingBreakdownSection() {
+                const breakdownContainer = document.getElementById('ratingBreakdownBarsContainer');
+                breakdownContainer.innerHTML = ''; // Clear DOM lama
+                
+                const totalPopulation = this.paginationState.totalAvailable;
+                
+                // Objek counter awal
+                let scoreCounter = { 5: 0, 4: 0, 3: 0, 2: 0, 1: 0 };
+                
+                // Menghitung frekuensi
+                this.dbCacheFiltered.forEach(row => {
+                    if(scoreCounter[row.rating] !== undefined) scoreCounter[row.rating]++;
+                });
+
+                // Looping dari 5 ke 1 untuk menyusun UI dari yang terbaik di atas
+                [5, 4, 3, 2, 1].forEach(scoreLevel => {
+                    const frequency = scoreCounter[scoreLevel];
+                    const percentageScore = totalPopulation === 0 ? 0 : Math.round((frequency / totalPopulation) * 100);
+                    const dictConfig = AppConfig.RatingDictionary[scoreLevel];
+                    
+                    // HTML Structure untuk Bar Custom
+                    const htmlString = `
+                    <div class="flex items-center gap-3 w-full group">
+                        <div class="w-28 flex-shrink-0 text-slate-300 flex items-center gap-2 transition-transform group-hover:translate-x-1">
+                            <span class="text-xl">${dictConfig.icon}</span> 
+                            <span class="text-xs font-bold">${dictConfig.label}</span>
+                        </div>
+                        <div class="flex-1 bg-slate-800/80 rounded-full h-3 overflow-hidden border border-slate-700/50 shadow-inner">
+                            <div class="h-full rounded-full transition-all duration-1000 ease-out relative overflow-hidden" 
+                                 style="width: ${percentageScore}%; background-color: ${dictConfig.hex}; box-shadow: 0 0 10px ${dictConfig.hex}80;">
+                                 <!-- Optional shimmer effect layer inside bar -->
+                                 <div class="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] opacity-0 group-hover:opacity-100 group-hover:translate-x-[100%] transition-transform duration-1000"></div>
+                            </div>
+                        </div>
+                        <div class="w-16 flex-shrink-0 text-right flex flex-col justify-center leading-tight">
+                            <span class="text-sm font-black text-white">${frequency}</span> 
+                            <span class="text-[9px] font-bold text-slate-500">${percentageScore}%</span>
+                        </div>
+                    </div>`;
+                    
+                    breakdownContainer.insertAdjacentHTML('beforeend', htmlString);
+                });
+            }
+
+            /**
+             * Mempersiapkan data untuk class ChartVisualizerManager.
+             */
+            static renderChartVisualization() {
+                let ratingFreqDistribution = [0, 0, 0, 0, 0]; // Index: 0=Bintang5, 1=Bintang4, ..., 4=Bintang1
+                
+                this.dbCacheFiltered.forEach(record => {
+                    // Rumus mapping index array: rating 5 -> idx 0, rating 1 -> idx 4
+                    const mappedIndex = 5 - record.rating;
+                    if(mappedIndex >= 0 && mappedIndex <= 4) {
+                        ratingFreqDistribution[mappedIndex]++;
+                    }
+                });
+
+                mainChartManager.renderDonut(ratingFreqDistribution, this.paginationState.totalAvailable);
+            }
+
+            /**
+             * Merender tabel HTML kompleks berdasarkan data paginasi saat ini.
+             */
+            static renderDataTableSection() {
+                const tbodyNode = document.getElementById('adminTableBody');
+                const emptyStateNode = document.getElementById('emptyTableState');
+                tbodyNode.innerHTML = ''; // Reset container tabel
+
+                const rowLimit = AppConfig.System.MAX_ROWS_PER_PAGE;
+                const startIndex = (this.paginationState.current - 1) * rowLimit;
+                const paginatedSubsetArray = this.dbCacheFiltered.slice(startIndex, startIndex + rowLimit);
+
+                // Handling kondisi tabel kosong
+                if (paginatedSubsetArray.length === 0) {
+                    emptyStateNode.classList.remove('hidden');
+                    this.updatePaginationUserInterface(0, 0, 0);
+                    return;
+                } else {
+                    emptyStateNode.classList.add('hidden');
+                }
+
+                // Merakit baris-baris (TR)
+                const fragmentNode = document.createDocumentFragment();
+                
+                paginatedSubsetArray.forEach((recordData, iterationIndex) => {
+                    const humanIndexNumber = startIndex + iterationIndex + 1;
+                    const visualConfig = AppConfig.RatingDictionary[recordData.rating];
+                    
+                    const rowTrElement = document.createElement('tr');
+                    rowTrElement.className = "hover:bg-slate-800/80 transition-colors duration-200 group relative";
+                    
+                    // Sanitasi teks ringan
+                    const safeName = recordData.nama ? recordData.nama.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "N/A";
+                    const safeFeedback = recordData.kritik ? recordData.kritik.replace(/</g, "&lt;").replace(/>/g, "&gt;") : "";
+                    const displayFeedback = safeFeedback === "" ? '<em class="text-slate-600">Tidak mengisi saran</em>' : `"${safeFeedback}"`;
+                    
+                    rowTrElement.innerHTML = `
+                        <td class="py-3.5 px-4 pl-5 text-center font-mono text-slate-500 font-bold">${humanIndexNumber}</td>
+                        <td class="py-3.5 px-4">
+                            <span class="text-[11px] text-slate-400 font-medium font-mono">${recordData.waktu}</span>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="font-bold text-slate-300 group-hover:text-white capitalize transition-colors">${safeName}</span>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <span class="font-mono text-slate-400 text-[11px] font-bold tracking-widest">${recordData.noHp}</span>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="inline-flex items-center px-2.5 py-1 rounded-md border border-slate-700 bg-slate-900 text-slate-300 text-[10px] font-extrabold shadow-sm tracking-wide">
+                                ${recordData.layanan}
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4">
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border ${visualConfig.borderColor} ${visualConfig.bgColor} shadow-sm w-max">
+                                <span class="text-sm leading-none">${visualConfig.icon}</span>
+                                <span class="text-[10px] font-black uppercase tracking-wider ${visualConfig.txtColor}">${visualConfig.label} ${visualConfig.valCode}</span>
+                            </div>
+                        </td>
+                        <td class="py-3.5 px-4 pr-5 w-1/4">
+                            <div class="text-[11px] text-slate-400 italic font-medium w-full max-w-[250px] overflow-hidden text-ellipsis whitespace-nowrap" title="${safeFeedback}">
+                                ${displayFeedback}
+                            </div>
+                        </td>
+                    `;
+                    fragmentNode.appendChild(rowTrElement);
+                });
+
+                tbodyNode.appendChild(fragmentNode);
+                
+                // Memicu kalkulasi teks navigasi bawah tabel
+                this.updatePaginationUserInterface(
+                    startIndex + 1, 
+                    startIndex + paginatedSubsetArray.length, 
+                    this.paginationState.totalAvailable
+                );
+            }
+
+            /**
+             * Merender statik text bottom navigasi & menonaktifkan tombol jika di ujung.
+             */
+            static updatePaginationUserInterface(startViewingId, endViewingId, totalLength) {
+                const infoTextNode = document.getElementById('paginationStatusText');
+                infoTextNode.innerHTML = `Menampilkan record <b class="text-white">${startViewingId} - ${endViewingId}</b> dari total <b class="text-white">${totalLength}</b> hasil`;
+                
+                const maximumPages = Math.ceil(totalLength / AppConfig.System.MAX_ROWS_PER_PAGE);
+                
+                // Disable logic
+                document.getElementById('btnPaginationPrev').disabled = (this.paginationState.current <= 1);
+                document.getElementById('btnPaginationNext').disabled = (this.paginationState.current >= maximumPages || maximumPages === 0);
+            }
+
+            /**
+             * Mengubah pointer halaman aktif
+             * @param {number} incrementalStep - biasanya +1 atau -1
+             */
+            static navigatePage(incrementalStep) {
+                this.paginationState.current += incrementalStep;
+                this.renderDataTableSection();
+            }
+
+            /** Membuka prompt native untuk memastikan penghapusan seluruh tabel */
+            static promptClearDatabase() {
+                if (this.dbCacheRaw.length === 0) {
+                    ToastManager.show("Basis Data Kosong", "Tidak ada data riwayat yang perlu dihapus.", "info");
+                    return;
+                }
+                
+                const confirmationMsg = "⚠️ PERINGATAN TINDAKAN DESTRUKTIF ⚠️\n\nApakah Anda benar-benar yakin ingin MENGHAPUS SEMUA DATA riwayat tamu dari penyimpanan lokal? Tindakan ini bersifat PERMANEN dan data tidak dapat dipulihkan kembali.";
+                
+                if (window.confirm(confirmationMsg)) {
+                    const isSuccess = LocalDatabaseController.wipeDatabase();
+                    if(isSuccess) {
+                        this.refreshAllData();
+                        ToastManager.show("Format Berhasil", "Basis data lokal telah berhasil diformat dan dikosongkan.", "success");
+                    }
+                }
+            }
+            
+            /** Inject mock data */
+            static promptGenerateMockData() {
+                const isSuccess = LocalDatabaseController.injectMockData();
+                if(isSuccess) {
+                    this.refreshAllData();
+                    ToastManager.show("Sistem Simulasi", "Berhasil memasukkan 35 data fiktif pengunjung untuk keperluan demo/analitik.", "success");
+                }
+            }
+        }
+
+
+        /**
+         * ============================================================================
+         * CONTROLLER CLASS: FormController
+         * Logika dan validasi spesifik untuk form publik pengunjung.
+         * ============================================================================
+         */
+        class FormController {
+            static initialize() {
+                const publicForm = document.getElementById('publicFeedbackForm');
+                if(!publicForm) return;
+
+                publicForm.addEventListener('submit', (eventParams) => {
+                    eventParams.preventDefault();
+                    this.processFormSubmission();
+                });
+                
+                // Reset errors on input
+                const inputs = publicForm.querySelectorAll('input, select, textarea');
+                inputs.forEach(inp => {
+                    inp.addEventListener('input', () => this.hideError(inp.name));
+                    inp.addEventListener('change', () => this.hideError(inp.name));
+                });
+            }
+            
+            static showError(name, msg) {
+                let errorNode;
+                if(name === 'fullName') errorNode = document.getElementById('errorFullName');
+                if(name === 'phoneNumber') errorNode = document.getElementById('errorPhoneNumber');
+                if(name === 'serviceType') errorNode = document.getElementById('errorServiceType');
+                if(name === 'inputSatisfactionRating') errorNode = document.getElementById('errorRating');
+                
+                if(errorNode) {
+                    errorNode.innerText = msg;
+                    errorNode.classList.remove('hidden');
+                    // Add minor shake animation class manually via JS
+                    errorNode.animate([ { transform: 'translateX(0)' }, { transform: 'translateX(5px)' }, { transform: 'translateX(-5px)' }, { transform: 'translateX(0)' } ], { duration: 300, iterations: 1 });
+                }
+            }
+            
+            static hideError(name) {
+                let errorNode;
+                if(name === 'fullName') errorNode = document.getElementById('errorFullName');
+                if(name === 'phoneNumber') errorNode = document.getElementById('errorPhoneNumber');
+                if(name === 'serviceType') errorNode = document.getElementById('errorServiceType');
+                if(name === 'inputSatisfactionRating') errorNode = document.getElementById('errorRating');
+                if(errorNode) errorNode.classList.add('hidden');
+            }
+
+            /** Pipeline pemrosesan Form Submit */
+            static processFormSubmission() {
+                let isValid = true;
+                
+                // 1. Ekstraksi nilai DOM
+                const rawNameField = document.getElementById('inputFullName').value.trim();
+                const rawPhoneField = document.getElementById('inputPhoneNumber').value.trim();
+                const rawServiceField = document.getElementById('inputServiceType').value;
+                const rawFeedbackField = document.getElementById('inputFeedbackNotes').value.trim();
+                const ratingRadioNode = document.querySelector('input[name="inputSatisfactionRating"]:checked');
+
+                // 2. Blok Validasi Ketat
+                if (!rawNameField || rawNameField.length < 3) {
+                    this.showError('fullName', 'Nama lengkap minimal 3 karakter.');
+                    isValid = false;
+                }
+                
+                if (!rawPhoneField || !ValidationService.isTelkomselNumber(rawPhoneField)) {
+                    this.showError('phoneNumber', 'Nomor handphone tidak valid atau bukan Telkomsel (Cth: 0812xxx)');
+                    isValid = false;
+                }
+                
+                if (!rawServiceField) {
+                    this.showError('serviceType', 'Pilih salah satu layanan dari opsi yang tersedia.');
+                    isValid = false;
+                }
+
+                if (!ratingRadioNode) {
+                    this.showError('inputSatisfactionRating', 'Mohon klik salah satu emoji penilaian pelayanan.');
+                    isValid = false;
+                }
+                
+                if(!isValid) return; // Abort submission
+
+                // 3. Merakit Data Model
+                const constructedRecordObject = {
+                    id: 'TRX-' + Date.now().toString() + Math.floor(Math.random()*100),
+                    waktu: DateFormatter.getCurrentTimestampStr(),
+                    nama: rawNameField,
+                    noHp: rawPhoneField,
+                    layanan: rawServiceField,
+                    rating: parseInt(ratingRadioNode.value, 10),
+                    kritik: rawFeedbackField
+                };
+
+                // 4. Loading State UI Mutator
+                const submitBtnNode = document.getElementById('btnSubmitFeedback');
+                const btnTextNode = document.getElementById('btnSubmitText');
+                const btnIconNode = document.getElementById('btnSubmitIcon');
+                
+                const originalText = btnTextNode.innerText;
+                const originalIconClass = btnIconNode.className;
+
+                // Animasi Loading State
+                btnTextNode.innerText = "Memproses Data...";
+                btnIconNode.className = "spinner-loader";
+                submitBtnNode.disabled = true;
+                submitBtnNode.classList.add('opacity-80', 'cursor-not-allowed');
+
+                // 5. Eksekusi Asynchronous Simulasi (Delay agar UX terasa responsif, 1.2 detik)
+                setTimeout(() => {
+                    const commitStatus = LocalDatabaseController.insertRecord(constructedRecordObject);
+                    
+                    // Kembalikan tombol ke bentuk semula
+                    btnTextNode.innerText = originalText;
+                    btnIconNode.className = originalIconClass;
+                    submitBtnNode.disabled = false;
+                    submitBtnNode.classList.remove('opacity-80', 'cursor-not-allowed');
+
+                    if (commitStatus) {
+                        // Bersihkan Formulir menyeluruh
+                        document.getElementById('publicFeedbackForm').reset();
+                        
+                        // Perbaikan Bug Chrome: Radio terkadang nge-stuck state checked UI-nya
+                        document.querySelectorAll('.emoji-selector input').forEach(rad => rad.checked = false);
+                        
+                        // Sukses
+                        ToastManager.show("Kunjungan Tersimpan!", "Terima kasih atas waktu dan penilaian yang Anda berikan.", "success", 4000);
+                        
+                        // Redirect Otomatis
+                        setTimeout(() => {
+                            ApplicationRouter.navigate('portal');
+                        }, 2500);
+                    } else {
+                        ToastManager.show("Gagal Tersimpan", "Terdapat masalah pada storage perangkat ini.", "error");
+                    }
+                }, 1200); // end of Fake Delay
+            }
+        }
+
+
+        /**
+         * ============================================================================
+         * CLASS: ModalManager
+         * Mengurus bukaan tutup layer melayang (Modal) login.
+         * ============================================================================
+         */
+        class ModalManager {
+            static openLoginModal() {
+                const modalWrapper = document.getElementById('modalAdminLogin');
+                const modalInner = document.getElementById('modalAdminLoginContent');
+                
+                // Cleanup sisa login form sebelumnya
+                document.getElementById('loginErrorMessage').classList.add('hidden');
+                document.getElementById('adminAuthenticationForm').reset();
+                document.getElementById('authPassword').type = 'password';
+                document.getElementById('passwordToggleIcon').classList.replace('fa-eye-slash', 'fa-eye');
+                
+                modalWrapper.classList.remove('hidden');
+                
+                // Transisi Timeout 
+                requestAnimationFrame(() => {
+                    modalWrapper.classList.remove('opacity-0');
+                    modalInner.classList.remove('scale-95');
+                });
+                
+                // Fokus otomatis untuk UX keyboard
+                setTimeout(() => {
+                    document.getElementById('authUsername').focus();
+                }, 100);
+            }
+
+            static closeLoginModal() {
+                const modalWrapper = document.getElementById('modalAdminLogin');
+                const modalInner = document.getElementById('modalAdminLoginContent');
+                
+                // Revert animation
+                modalWrapper.classList.add('opacity-0');
+                modalInner.classList.add('scale-95');
+                
+                // Tunggu transisi selesai sebelum men-set display:none
+                setTimeout(() => {
+                    modalWrapper.classList.add('hidden');
+                }, 400); // 400ms is duration set in tailwind classes
+            }
+
+            static togglePasswordVisibility() {
+                const passInputNode = document.getElementById('authPassword');
+                const iconNode = document.getElementById('passwordToggleIcon');
+                
+                if (passInputNode.type === 'password') {
+                    passInputNode.type = 'text';
+                    iconNode.classList.replace('fa-eye', 'fa-eye-slash');
+                } else {
+                    passInputNode.type = 'password';
+                    iconNode.classList.replace('fa-eye-slash', 'fa-eye');
+                }
+            }
+            
+            static attachBackdropClickListener() {
+                const modalWrapper = document.getElementById('modalAdminLogin');
+                modalWrapper.addEventListener('click', (e) => {
+                    // Jika target yang diklik adalah background hitam
+                    if (e.target.id === 'modalAdminLogin') {
+                        this.closeLoginModal();
+                    }
+                });
+            }
+        }
+
+
+        /**
+         * ============================================================================
+         * CLASS: ApplicationSession
+         * Manajer sesi otentikasi.
+         * ============================================================================
+         */
+        class ApplicationSession {
+            /** Cek apakah boolean string 'true' di session storage */
+            static isLoggedIn() {
+                return sessionStorage.getItem(AppConfig.System.STORAGE_KEY_SESSION) === 'true';
+            }
+
+            /** Mengakhiri sesi */
+            static logout() {
+                sessionStorage.removeItem(AppConfig.System.STORAGE_KEY_SESSION);
+                ApplicationRouter.navigate('portal');
+                ToastManager.show("Sesi Diakhiri", "Anda telah keluar dari ruang Administrasi dengan aman.", "info");
+            }
+            
+            /** Listener Login Form */
+            static attachLoginListener() {
+                const loginForm = document.getElementById('adminAuthenticationForm');
+                if(!loginForm) return;
+
+                loginForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    
+                    const userVal = document.getElementById('authUsername').value;
+                    const passVal = document.getElementById('authPassword').value;
+                    const errorMsgBox = document.getElementById('loginErrorMessage');
+                    
+                    const btnLoginExecute = document.getElementById('btnExecuteLogin');
+                    const btnLoginText = document.getElementById('btnLoginText');
+                    
+                    // Loading State Auth
+                    const origText = btnLoginText.innerText;
+                    btnLoginText.innerText = "Memverifikasi...";
+                    btnLoginExecute.disabled = true;
+                    btnLoginExecute.classList.add('opacity-70');
+
+                    // Simulasi delay otentikasi jaringan
+                    setTimeout(() => {
+                        btnLoginText.innerText = origText;
+                        btnLoginExecute.disabled = false;
+                        btnLoginExecute.classList.remove('opacity-70');
+
+                        // Pengecekan Kredensial Hardcoded Standard
+                        if (userVal === AppConfig.Credentials.DEFAULT_USERNAME && passVal === AppConfig.Credentials.DEFAULT_PASSWORD) {
+                            sessionStorage.setItem(AppConfig.System.STORAGE_KEY_SESSION, 'true');
+                            
+                            errorMsgBox.classList.add('hidden');
+                            ModalManager.closeLoginModal();
+                            ApplicationRouter.navigate('admin');
+                            
+                            ToastManager.show("Otentikasi Tervalidasi", "Akses diberikan. Selamat datang di pusat kendali Admin.", "success");
+                        } else {
+                            // Gagal Auth
+                            errorMsgBox.classList.remove('hidden');
+                            
+                            // Visual cue guncangan 
+                            const modalInner = document.getElementById('modalAdminLoginContent');
+                            modalInner.animate([
+                                { transform: 'translateX(0) scale(1)' },
+                                { transform: 'translateX(10px) scale(1)' },
+                                { transform: 'translateX(-10px) scale(1)' },
+                                { transform: 'translateX(0) scale(1)' }
+                            ], { duration: 400, easing: 'ease-in-out' });
+                        }
+                    }, 800);
+                });
+            }
+        }
+
+
+        /**
+         * ============================================================================
+         * CLASS: ApplicationRouter
+         * Pengontrol rute SPA (Single Page Application). Merubah Class CSS.
+         * ============================================================================
+         */
+        class ApplicationRouter {
+            /**
+             * Eksekusi pergantian layar aktif
+             * @param {'portal'|'form'|'admin'} targetViewName - Id target layar
+             */
+            static navigate(targetViewName) {
+                LoggerService.info(`Router Navigating to: [${targetViewName.toUpperCase()}]`);
+
+                // 1. Dapatkan node-node
+                const viewNodes = document.querySelectorAll('.app-view');
+                const mainBodyNode = document.getElementById('mainApplicationBody');
+                
+                // 2. Lepaskan semua status is-active (Hiding all screens)
+                viewNodes.forEach(node => {
+                    node.classList.remove('is-active');
+                });
+                
+                // 3. Reset tema base class
+                mainBodyNode.className = "relative"; 
+
+                // 4. Implementasi Specific Route State
+                if (targetViewName === 'portal') {
+                    
+                    document.getElementById('viewPortal').classList.add('is-active');
+                    mainBodyNode.classList.add('theme-portal');
+                    
+                } else if (targetViewName === 'form') {
+                    
+                    document.getElementById('viewForm').classList.add('is-active');
+                    mainBodyNode.classList.add('theme-form');
+                    
+                    // Optional: Scroll top
+                    window.scrollTo(0,0);
+                    
+                } else if (targetViewName === 'admin') {
+                    
+                    document.getElementById('viewAdminDashboard').classList.add('is-active');
+                    mainBodyNode.classList.add('theme-admin');
+                    
+                    // Bootstrapping the Admin Engine
+                    DashboardController.initialize();
+                }
+            }
+        }
+
+        /**
+         * ============================================================================
+         * ROOT KICKSTARTER
+         * Memicu rangkaian class saat HTML DOM selesai dirender secara utuh oleh mesin Chrome/Firefox.
+         * ============================================================================
+         */
+        document.addEventListener('DOMContentLoaded', () => {
+            LoggerService.info("DOM Loaded - Initiating Boot Sequence...");
+            
+            // Setting UI Text
+            const crtNode = document.getElementById('copyrightYear');
+            if(crtNode) crtNode.innerText = new Date().getFullYear();
+
+            // Attaching Listeners
+            FormController.initialize();
+            ApplicationSession.attachLoginListener();
+            ModalManager.attachBackdropClickListener();
+
+            // Routing Intelligence
+            // Jika ada riwayat refresh browser pada halaman admin saat kondisi session masih aktif
+            if (ApplicationSession.isLoggedIn()) {
+                ApplicationRouter.navigate('admin');
+            } else {
+                ApplicationRouter.navigate('portal');
+            }
+        });
+
+    </script>
+</body>
+</html>
